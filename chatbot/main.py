@@ -83,7 +83,8 @@ def main() -> None:
             gl.START_MENU: [MessageHandler(filters.TEXT & ~filters.COMMAND, start_handler)],
             gl.COURSES_MENU: [CallbackQueryHandler(courses.courses_handler)],
             gl.COURSE_INFO_MENU: [CallbackQueryHandler(courses.course_info_handler)],
-            gl.ASK_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, reg.registration_phone)],
+            gl.ASK_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, reg.registration_phone),
+                          CallbackQueryHandler(reg.registration_phone)],
             gl.ASK_NUMBER: [MessageHandler(filters.CONTACT, reg.registration_city)],
             gl.ASK_CITY: [MessageHandler(filters.TEXT, reg.registration_email)],
             gl.ASK_EMAIL: [MessageHandler(filters.TEXT & ~filters.COMMAND, reg.registration_confirmation)],
@@ -92,7 +93,8 @@ def main() -> None:
             gl.PROJECT_MENU: [CallbackQueryHandler(projects.project_handler)],
             gl.PROJECT_INFO_MENU: [CallbackQueryHandler(projects.project_info_handler)],
             gl.FINISH_REGISTRATION: [CallbackQueryHandler(reg.finish_registration_handler)],
-            gl.SET_WEBINAR: [MessageHandler(filters.TEXT & ~filters.COMMAND, webinars.registration_webinar)]
+            gl.SET_WEBINAR: [MessageHandler(filters.TEXT & ~filters.COMMAND, webinars.registration_webinar),
+                             CallbackQueryHandler(webinars.registration_webinar)]
 
         },
         fallbacks=[CommandHandler('cancel', stop)],

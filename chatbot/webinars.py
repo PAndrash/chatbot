@@ -100,10 +100,16 @@ async def set_webinar_date(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     Returns:
         int: The state indicating the bot is now waiting for the webinar date to be set.
     """
+    keyboard = [
+        [InlineKeyboardButton(gl.BACK_BUTTON_NAME, callback_data=gl.BACK_BUTTON_NAME)]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
     text = gl.TEXT_DATA["set_webinar_true"] if gl.WEBINAR_DATE \
         else gl.TEXT_DATA["set_webinar_false"]
     await update.message.reply_text(text,
-                                    parse_mode="HTML")
+                                    reply_markup=reply_markup,
+                                    parse_mode="HTML",)
     return gl.SET_WEBINAR
 
 
@@ -121,6 +127,11 @@ async def registration_webinar(update: Update, context: ContextTypes.DEFAULT_TYP
     Returns:
         int: The state indicating the next step, either setting the date or returning to the menu.
     """
+    query = update.callback_query
+    await query.answer()
+    if query.data == gl.BACK_BUTTON_NAME:
+        return await start(query, context)
+
     data = update.message.text
     if not is_valid_date(data):
         await update.message.reply_text(gl.TEXT_DATA["webinar_wrong_date"],

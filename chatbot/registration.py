@@ -40,8 +40,14 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE, registrat
     Returns:
         int: The next state in the conversation flow, indicating that the bot is now asking for the user's name.
     """
+    keyboard = [
+        [InlineKeyboardButton(gl.REGISTRATION_NAMES.cancel, callback_data=gl.CANCEL_REGISTRATION_CALLBACK)]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
     context.user_data["registration_for"] = registration_for
     await update.message.reply_text(gl.TEXT_DATA["registration_question"]["name"],
+                                    reply_markup=reply_markup,
                                     parse_mode="HTML")
     return gl.ASK_NAME
 
@@ -61,6 +67,11 @@ async def registration_phone(update: Update, context: ContextTypes.DEFAULT_TYPE)
     Returns:
         int: The next state in the conversation flow, indicating that the bot is now asking for the user's phone number.
     """
+    query = update.callback_query
+    await query.answer()
+    if query.data == gl.CANCEL_REGISTRATION_CALLBACK:
+        return await finish_registration_menu(query, context)
+
     context.user_data['name'] = update.message.text
     reply_markup = ReplyKeyboardMarkup([[
         KeyboardButton(gl.PHONE_BUTTON_NAME, request_contact=True)

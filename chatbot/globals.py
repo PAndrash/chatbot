@@ -5,7 +5,7 @@ import pytz
 
 from collections import namedtuple
 
-__version__ = "0.1"
+__version__ = "0.1.1"
 
 TOKEN = os.getenv("TOKEN")
 ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID")
@@ -44,6 +44,7 @@ YES_BUTTON_NAME = "Так"
 NO_BUTTON_NAME = "Ні"
 
 REGISTRATION_CALLBACK = "201"
+CANCEL_REGISTRATION_CALLBACK = "-1"
 
 # Webinar config
 WEBINAR_DATE = ""
