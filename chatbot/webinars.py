@@ -17,7 +17,7 @@ from telegram.ext import (
 )
 
 import chatbot.globals as gl
-from chatbot.start import start
+from chatbot.start import start, remove_all_jobs
 import chatbot.registration as reg
 
 
@@ -105,7 +105,7 @@ async def set_webinar_date(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    text = gl.TEXT_DATA["set_webinar_true"] if gl.WEBINAR_DATE \
+    text = gl.TEXT_DATA["set_webinar_true"].format(gl.WEBINAR_DATE) if gl.WEBINAR_DATE \
         else gl.TEXT_DATA["set_webinar_false"]
     await update.message.reply_text(text,
                                     reply_markup=reply_markup,
@@ -128,11 +128,18 @@ async def registration_webinar(update: Update, context: ContextTypes.DEFAULT_TYP
         int: The state indicating the next step, either setting the date or returning to the menu.
     """
     query = update.callback_query
-    await query.answer()
-    if query.data == gl.BACK_BUTTON_NAME:
+    if query:
+        await query.answer()
         return await start(query, context)
 
     data = update.message.text
+    if data == "-":
+        remove_all_jobs(context)
+        gl.WEBINAR_DATE = ""
+        await update.message.reply_text(gl.TEXT_DATA["webinar_remove_date_successful"],
+                                        parse_mode="HTML")
+        return await reg.finish_registration_menu(update, context)
+
     if not is_valid_date(data):
         await update.message.reply_text(gl.TEXT_DATA["webinar_wrong_date"],
                                         parse_mode="HTML")

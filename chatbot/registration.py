@@ -68,8 +68,8 @@ async def registration_phone(update: Update, context: ContextTypes.DEFAULT_TYPE)
         int: The next state in the conversation flow, indicating that the bot is now asking for the user's phone number.
     """
     query = update.callback_query
-    await query.answer()
-    if query.data == gl.CANCEL_REGISTRATION_CALLBACK:
+    if query:
+        await query.answer()
         return await finish_registration_menu(query, context)
 
     context.user_data['name'] = update.message.text

@@ -92,3 +92,19 @@ async def alarm(context: ContextTypes.DEFAULT_TYPE) -> None:
     text = gl.TEXT_DATA["webinar_reminder"].format(gl.HOURS_REMIND)
     await context.bot.send_message(job.chat_id, text=text)
 
+
+def remove_all_jobs(context):
+    """
+    Remove all jobs from the job queue.
+
+    This function retrieves all currently scheduled jobs in the job queue and
+    schedules each one for removal, effectively canceling them.
+
+    Args:
+        context (telegram.ext.CallbackContext): The context object containing the job queue.
+    """
+    jobs = context.job_queue.jobs()
+
+    # Iterate over the jobs and remove each one
+    for job in jobs:
+        job.schedule_removal()

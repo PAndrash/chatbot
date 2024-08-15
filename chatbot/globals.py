@@ -5,7 +5,7 @@ import pytz
 
 from collections import namedtuple
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 
 TOKEN = os.getenv("TOKEN")
 ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID")
