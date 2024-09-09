@@ -79,9 +79,6 @@ async def courses_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         case gl.COURSES_MENU_BUTTONS.individual:
             context.user_data["course"] = gl.COURSES_MENU_BUTTONS.individual
             return await handle_courses_option(update, context, text=gl.TEXT_DATA["courses_info"]["individual"])
-        case gl.COURSES_MENU_BUTTONS.group:
-            context.user_data["course"] = gl.COURSES_MENU_BUTTONS.group
-            return await handle_courses_option(update, context, text=gl.TEXT_DATA["courses_info"]["group"])
         case gl.COURSES_MENU_BUTTONS.professional:
             context.user_data["course"] = gl.COURSES_MENU_BUTTONS.professional
             return await handle_courses_option(update, context, text=gl.TEXT_DATA["courses_info"]["professional"])
@@ -91,6 +88,9 @@ async def courses_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         case gl.COURSES_MENU_BUTTONS.stock_market_training:
             context.user_data["course"] = gl.COURSES_MENU_BUTTONS.stock_market_training
             return await handle_courses_option(update, context, text=gl.TEXT_DATA["courses_info"]["stock_market_training"])
+        case gl.COURSES_MENU_BUTTONS.investor:
+            context.user_data["course"] = gl.COURSES_MENU_BUTTONS.stock_market_training
+            return await handle_courses_option(update, context, text=gl.TEXT_DATA["courses_info"]["investor"])
         case gl.BACK_BUTTON_NAME:
             return await start(query, context)
 

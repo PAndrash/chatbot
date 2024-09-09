@@ -9,7 +9,8 @@ from telegram import (
     Update,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
-    ReplyKeyboardRemove
+    ReplyKeyboardRemove,
+    InputMediaPhoto
 )
 
 from telegram.ext import (
@@ -74,14 +75,21 @@ async def project_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
     match query.data:
         case gl.PROJECT_MENU_BUTTONS.portfolio:
-            return await handle_project_option(update, context, text=gl.TEXT_DATA["project_info"]["portfolio"])
+            return await handle_project_option(update, context, text=gl.TEXT_DATA["project_info"]["portfolio"]["text"],
+                                               image=gl.TEXT_DATA["project_info"]["portfolio"]["image_path"],
+                                               end_text=gl.TEXT_DATA["project_info"]["portfolio"]["end_text"])
         case gl.PROJECT_MENU_BUTTONS.bots_trading:
-            return await handle_project_option(update, context, text=gl.TEXT_DATA["project_info"]["bots_trading"])
+            return await handle_project_option(update, context, text=gl.TEXT_DATA["project_info"]["bots_trading"]["text"],
+                                               image=gl.TEXT_DATA["project_info"]["bots_trading"]["image_path"],
+                                               end_text=gl.TEXT_DATA["project_info"]["bots_trading"]["end_text"])
+        case gl.PROJECT_MENU_BUTTONS.spiceprop:
+            return await handle_project_option(update, context, text=gl.TEXT_DATA["project_info"]["spiceprop"])
         case gl.BACK_BUTTON_NAME:
             return await start(query, context)
 
 
-async def handle_project_option(update: Update, context: ContextTypes.DEFAULT_TYPE, text) -> int:
+async def handle_project_option(update: Update, context: ContextTypes.DEFAULT_TYPE, text,
+                                image=None, end_text=None) -> int:
     """
     Display project information and provide options to register or go back.
 
@@ -93,6 +101,9 @@ async def handle_project_option(update: Update, context: ContextTypes.DEFAULT_TY
         update (Update): Incoming update object containing the user's callback query.
         context (ContextTypes.DEFAULT_TYPE): Context object to maintain data across user sessions.
         text (str): The project information text to be displayed.
+        image (str): Path to image that will be sent
+        end_text (str ): text after images
+
 
     Returns:
         int: The state indicating that the bot is now showing project information.
@@ -102,6 +113,23 @@ async def handle_project_option(update: Update, context: ContextTypes.DEFAULT_TY
         [InlineKeyboardButton(gl.BACK_BUTTON_NAME, callback_data=gl.BACK_BUTTON_NAME)]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
+
+    if image:
+        chat_id = update.effective_chat.id
+        media_group = [InputMediaPhoto(open(image_path, 'rb')) for image_path in image]
+        await update.callback_query.message.reply_text(
+            text=text,
+            parse_mode="HTML"
+        )
+
+        await context.bot.send_media_group(chat_id=chat_id, media=media_group)
+
+        await update.callback_query.message.reply_text(
+            text=end_text,
+            reply_markup=reply_markup,
+            parse_mode="HTML"
+        )
+        return gl.PROJECT_INFO_MENU
 
     await update.callback_query.message.reply_text(
         text=text,

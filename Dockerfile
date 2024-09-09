@@ -4,7 +4,7 @@ EXPOSE 8081
 RUN apt-get update && apt-get upgrade -y
 WORKDIR /app
 
-COPY requirements.txt texts.json ./
+COPY requirements.txt static ./
 RUN pip install -r requirements.txt
 
 COPY chatbot ./chatbot/
