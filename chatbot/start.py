@@ -82,8 +82,7 @@ async def make_reminder(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
     chat_id = update.effective_message.chat_id
     webinar_data, webinar_url = get_webinars_info()
-   # date_obj = datetime.datetime.strptime(webinar_data, "%d.%m.%Y %H:%M") - datetime.timedelta(hours=gl.HOURS_REMIND)
-    date_obj = datetime.datetime.strptime(webinar_data, "%d.%m.%Y %H:%M")
+    date_obj = datetime.datetime.strptime(webinar_data, "%d.%m.%Y %H:%M") - datetime.timedelta(hours=gl.HOURS_REMIND)
     date_obj = gl.TIMEZONE.localize(date_obj)  # Localize the datetime to your timezone
     insert_webinar_user(chat_id, date_obj, webinar_url)
     context.job_queue.run_once(webinar_reminder, data=webinar_url, when=date_obj, chat_id=chat_id, name=str(chat_id))
