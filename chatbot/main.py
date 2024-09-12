@@ -17,7 +17,7 @@ from telegram.ext import (
     CallbackQueryHandler,
     MessageHandler,
     filters,
-    ConversationHandler
+    ConversationHandler,
 )
 
 import chatbot.globals as gl
@@ -25,11 +25,14 @@ import chatbot.courses as courses
 import chatbot.registration as reg
 import chatbot.webinars as webinars
 import chatbot.projects as projects
-from chatbot.start import start, stop
+import chatbot.send_all as send_all
+from chatbot.start import start, stop, restore_all_jobs, restore_all_webinars
+from db.database import create_db_and_tables
 
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.DEBUG
-)
+
+# logging.basicConfig(
+#     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.DEBUG
+# )
 
 
 async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -43,6 +46,7 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
     - Projects menu
     - Cancel the current operation
     - Set the webinar date
+    - Send message to all users
 
     Args:
         update (Update): Incoming update object containing message and user data.
@@ -66,6 +70,8 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
             return await stop(update, context)
         case gl.SET_WEBINAR_BUTTON:
             return await webinars.set_webinar_date(update, context)
+        case gl.SEND_ALL_BUTTON:
+            return await send_all.get_data_from_admin(update, context)
 
 
 def main() -> None:
@@ -76,7 +82,11 @@ def main() -> None:
     with different states for handling user interactions, and starts the bot's
     polling mechanism to listen for incoming updates and commands.
     """
+    create_db_and_tables()
     application = ApplicationBuilder().token(gl.TOKEN).build()
+    restore_all_jobs(application)
+    restore_all_webinars(application)
+
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
         states={
@@ -94,7 +104,15 @@ def main() -> None:
             gl.PROJECT_INFO_MENU: [CallbackQueryHandler(projects.project_info_handler)],
             gl.FINISH_REGISTRATION: [CallbackQueryHandler(reg.finish_registration_handler)],
             gl.SET_WEBINAR: [MessageHandler(filters.TEXT & ~filters.COMMAND, webinars.registration_webinar),
-                             CallbackQueryHandler(webinars.registration_webinar)]
+                             CallbackQueryHandler(webinars.registration_webinar)],
+            gl.SET_WEBINAR_URL: [MessageHandler(filters.TEXT & ~filters.COMMAND, webinars.registration_webinar_url),
+                                 CallbackQueryHandler(webinars.registration_webinar_url)],
+            gl.WAITING_FOR_MESSAGE: [
+                MessageHandler(filters.TEXT | filters.PHOTO | filters.ALL, send_all.receive_message),
+                CallbackQueryHandler(send_all.stop_collection, pattern="^stop$")],
+            gl.REVIEW_SCHEDULE: [CallbackQueryHandler(send_all.confirm_schedule, pattern="^confirm$"),
+                                 CallbackQueryHandler(send_all.restart_collection, pattern="^start_over$")],
+            gl.WAITING_FOR_TIME: [MessageHandler(filters.TEXT & ~filters.COMMAND, send_all.receive_time)]
 
         },
         fallbacks=[CommandHandler('cancel', stop)],

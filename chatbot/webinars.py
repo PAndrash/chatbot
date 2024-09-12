@@ -5,6 +5,8 @@ user registrations, and allowing an admin to set the webinar date.
 """
 import datetime
 
+from db.database import get_webinar_data, set_webinar_data, delete_webinar_data
+
 from telegram import (
     Update,
     InlineKeyboardButton,
@@ -36,7 +38,8 @@ async def webinars_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     Returns:
         int: The state indicating the bot is now in the webinar menu, or None if no webinar is planned.
     """
-    if not gl.WEBINAR_DATE:
+    webinar_data = get_webinar_data()
+    if not webinar_data:
         await update.message.reply_text(
             gl.TEXT_DATA["webinar_unplanned"],
             parse_mode="HTML",
@@ -50,13 +53,13 @@ async def webinars_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
     keyboard = [
-        [InlineKeyboardButton(gl.REGISTRATION_NAMES.registration, callback_data=gl.REGISTRATION_CALLBACK)],
+        [InlineKeyboardButton(gl.REGISTRATION_NAMES.registration_webinar, callback_data=gl.REGISTRATION_CALLBACK)],
         [InlineKeyboardButton(gl.BACK_BUTTON_NAME, callback_data=gl.BACK_BUTTON_NAME)]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     await update.message.reply_text(
-        text=gl.WEBINAR_DATE,
+        text=webinar_data[0],
         reply_markup=reply_markup,
         parse_mode="HTML"
     )
@@ -104,10 +107,39 @@ async def set_webinar_date(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         [InlineKeyboardButton(gl.BACK_BUTTON_NAME, callback_data=gl.BACK_BUTTON_NAME)]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
+    webinar_data = get_webinar_data()
 
-    text = gl.TEXT_DATA["set_webinar_true"].format(gl.WEBINAR_DATE) if gl.WEBINAR_DATE \
+    text = gl.TEXT_DATA["set_webinar_true"].format(webinar_data) if webinar_data \
         else gl.TEXT_DATA["set_webinar_false"]
+
     await update.message.reply_text(text,
+                                    reply_markup=reply_markup,
+                                    parse_mode="HTML",)
+    return gl.SET_WEBINAR_URL
+
+
+async def registration_webinar_url(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    if query:
+        await query.answer()
+        return await start(query, context)
+
+    data = update.message.text
+    if data == "-":
+        remove_all_jobs(context)
+        delete_webinar_data()
+        await update.message.reply_text(gl.TEXT_DATA["webinar_remove_date_successful"],
+                                        parse_mode="HTML")
+        return await reg.finish_registration_menu(update, context)
+
+    context.user_data['url'] = data
+
+    keyboard = [
+        [InlineKeyboardButton(gl.BACK_BUTTON_NAME, callback_data=gl.BACK_BUTTON_NAME)]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    await update.message.reply_text(gl.TEXT_DATA["set_webinar_time"],
                                     reply_markup=reply_markup,
                                     parse_mode="HTML",)
     return gl.SET_WEBINAR
@@ -133,19 +165,12 @@ async def registration_webinar(update: Update, context: ContextTypes.DEFAULT_TYP
         return await start(query, context)
 
     data = update.message.text
-    if data == "-":
-        remove_all_jobs(context)
-        gl.WEBINAR_DATE = ""
-        await update.message.reply_text(gl.TEXT_DATA["webinar_remove_date_successful"],
-                                        parse_mode="HTML")
-        return await reg.finish_registration_menu(update, context)
-
     if not is_valid_date(data):
         await update.message.reply_text(gl.TEXT_DATA["webinar_wrong_date"],
                                         parse_mode="HTML")
         return await set_webinar_date(update, context)
 
-    gl.WEBINAR_DATE = data
+    set_webinar_data(data, context.user_data['url'])
     await update.message.reply_text(gl.TEXT_DATA["webinar_set_date_successful"],
                                     parse_mode="HTML")
     return await reg.finish_registration_menu(update, context)

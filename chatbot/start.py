@@ -6,10 +6,14 @@ notifications.
 """
 import datetime
 
-from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
+from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, InputMediaPhoto
 from telegram.ext import ContextTypes, ConversationHandler
 
 import chatbot.globals as gl
+from db.database import insert_user, \
+    get_webinars_info, get_all_scheduled_messages, \
+    get_all_chat_ids_from_db, delete_scheduled_message_by_time, \
+    insert_webinar_user, get_future_webinars_and_delete_past
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -30,8 +34,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """
     keyboard_buttons = [[button] for button in gl.START_KEYBOARD_BUTTONS]
     chat_id = update.message.chat_id
+    if chat_id != int(gl.ADMIN_CHAT_ID):
+        insert_user(chat_id)
+
     if chat_id == int(gl.ADMIN_CHAT_ID):
         keyboard_buttons.append([gl.SET_WEBINAR_BUTTON])
+        keyboard_buttons.append([gl.SEND_ALL_BUTTON])
     reply_markup = ReplyKeyboardMarkup(keyboard_buttons, one_time_keyboard=True, resize_keyboard=True)
 
     await update.message.reply_text(
@@ -73,12 +81,15 @@ async def make_reminder(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context (ContextTypes.DEFAULT_TYPE): Context object to maintain data across user sessions.
     """
     chat_id = update.effective_message.chat_id
-    date_obj = datetime.datetime.strptime(gl.WEBINAR_DATE, "%d.%m.%Y %H:%M") - datetime.timedelta(hours=gl.HOURS_REMIND)
+    webinar_data, webinar_url = get_webinars_info()
+   # date_obj = datetime.datetime.strptime(webinar_data, "%d.%m.%Y %H:%M") - datetime.timedelta(hours=gl.HOURS_REMIND)
+    date_obj = datetime.datetime.strptime(webinar_data, "%d.%m.%Y %H:%M")
     date_obj = gl.TIMEZONE.localize(date_obj)  # Localize the datetime to your timezone
-    context.job_queue.run_once(alarm, when=date_obj, chat_id=chat_id, name=str(chat_id))
+    insert_webinar_user(chat_id, date_obj, webinar_url)
+    context.job_queue.run_once(webinar_reminder, data=webinar_url, when=date_obj, chat_id=chat_id, name=str(chat_id))
 
 
-async def alarm(context: ContextTypes.DEFAULT_TYPE) -> None:
+async def webinar_reminder(context: ContextTypes.DEFAULT_TYPE) -> None:
     """
     Send the alarm message to the user.
 
@@ -89,7 +100,7 @@ async def alarm(context: ContextTypes.DEFAULT_TYPE) -> None:
         context (ContextTypes.DEFAULT_TYPE): Context object containing job data and bot information.
     """
     job = context.job
-    text = gl.TEXT_DATA["webinar_reminder"].format(gl.HOURS_REMIND)
+    text = gl.TEXT_DATA["webinar_reminder"].format(gl.HOURS_REMIND, job.data)
     await context.bot.send_message(job.chat_id, text=text)
 
 
@@ -108,3 +119,48 @@ def remove_all_jobs(context):
     # Iterate over the jobs and remove each one
     for job in jobs:
         job.schedule_removal()
+
+
+def restore_all_jobs(application) -> None:
+    users = get_all_chat_ids_from_db()
+    all_scheduled_messages = get_all_scheduled_messages()
+    for user in users:
+        for message in all_scheduled_messages:
+            scheduled_time = message[0]
+            date_obj = datetime.datetime.strptime(scheduled_time, "%d.%m.%Y %H:%M")
+            date_obj = gl.TIMEZONE.localize(date_obj)  # Localize the datetime to your timezone
+            now = datetime.datetime.now(gl.TIMEZONE)
+            if now > date_obj:
+                delete_scheduled_message_by_time(scheduled_time)
+                continue
+
+            application.job_queue.run_once(send_message,
+                                           data=message,
+                                           when=date_obj,
+                                           chat_id=user,
+                                           name=str(user))
+
+
+async def send_message(application):
+    message = application.job.data
+
+    text_messages, photo_messages = message[1].split(gl.SEPERATOR), message[2].split(gl.SEPERATOR)
+    for message in text_messages:
+        await application.bot.send_message(chat_id=application.job.chat_id, text=message)
+
+    if photo_messages:
+        media_group = [InputMediaPhoto(media=msg) for msg in photo_messages]
+        await application.bot.send_media_group(chat_id=application.job.chat_id, media=media_group)
+
+
+def restore_all_webinars(application) -> None:
+    webinars_info = get_future_webinars_and_delete_past()
+    for info in webinars_info:
+        user_chat_id, webinar_data, webinar_url = info
+        webinar_data = datetime.datetime.fromisoformat(webinar_data)
+        application.job_queue.run_once(webinar_reminder,
+                                       data=webinar_url,
+                                       when=webinar_data,
+                                       chat_id=user_chat_id,
+                                       name=str(user_chat_id))
+
