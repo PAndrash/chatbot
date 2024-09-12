@@ -5,12 +5,11 @@ import pytz
 
 from collections import namedtuple
 
-__version__ = "1.0"
+__version__ = "1.0.1"
 
 TOKEN = os.getenv("TOKEN")
 ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID")
 DB_FILE = "dynamic/bots_info.db"
-BASE_PATH = "dynamic/"
 SEPERATOR = "|"
 
 # Define states

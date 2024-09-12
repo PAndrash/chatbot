@@ -5,6 +5,8 @@ menu, viewing detailed project information, and registering for projects. The sc
 leverages the python-telegram-bot library's asynchronous capabilities to manage
 conversations and user interactions effectively.
 """
+import os
+
 from telegram import (
     Update,
     InlineKeyboardButton,
@@ -116,7 +118,7 @@ async def handle_project_option(update: Update, context: ContextTypes.DEFAULT_TY
 
     if image:
         chat_id = update.effective_chat.id
-        media_group = [InputMediaPhoto(open(image_path, 'rb')) for image_path in image]
+        media_group = [InputMediaPhoto(open(image_path, 'rb')) for image_path in get_all_file_paths(image)]
         await update.callback_query.message.reply_text(
             text=text,
             parse_mode="HTML"
@@ -160,3 +162,18 @@ async def project_info_handler(update: Update, context: ContextTypes.DEFAULT_TYP
         return await projects_menu(query, context)
     elif query.data == gl.REGISTRATION_CALLBACK:
         return await reg.register(query, context, gl.REGISTRATION_FOR_PROJECT)
+
+
+def get_all_file_paths(folder_path):
+    # List to store paths of all files
+    file_paths = []
+
+    # Iterate over all items in the folder
+    for item in os.listdir(folder_path):
+        # Construct full path
+        full_path = os.path.join(folder_path, item)
+        # Check if it is a file
+        if os.path.isfile(full_path):
+            file_paths.append(full_path)
+
+    return file_paths
