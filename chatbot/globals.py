@@ -4,8 +4,11 @@ import json
 import pytz
 
 from collections import namedtuple
+from dotenv import load_dotenv
 
-__version__ = "1.0.1"
+__version__ = "1.1"
+# Load environment variables from the .env file
+load_dotenv()
 
 TOKEN = os.getenv("TOKEN")
 ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID")
@@ -17,20 +20,24 @@ START_MENU, COURSES_MENU, COURSE_INFO_MENU, \
     ASK_NAME, ASK_NUMBER, ASK_CITY, ASK_EMAIL, CONFIRMATION, \
     WEBINAR_MENU, PROJECT_MENU, PROJECT_INFO_MENU,\
     FINISH_REGISTRATION, SET_WEBINAR, SET_WEBINAR_URL, WAITING_FOR_MESSAGE,\
-    REVIEW_SCHEDULE, WAITING_FOR_TIME = range(17)
+    REVIEW_SCHEDULE, WAITING_FOR_TIME, AWARDS_MENU, AFFILIATE_PROGRAM_INFO_MENU = range(19)
 
 # Define buttons names
-Start_buttons = namedtuple("Start_buttuns", ["courses", "projects", "webinars", "registration", "cancel"])
-START_KEYBOARD_BUTTONS = Start_buttons("Навчання", "Проекти", "Вебінари", "Запис на консультацію", "Завершити розмову")
+Start_buttons = namedtuple("Start_buttuns", ["courses", "projects", "webinars", "registration", "awards",
+                                             "affiliate_program", "cancel"])
+START_KEYBOARD_BUTTONS = Start_buttons("Навчання", "Проекти", "Вебінари", "Запис на консультацію",
+                                       "Нагороди", "Партнерська програма", "Завершити розмову")
 SEND_ALL_BUTTON = "Відправити всім"
 
 Courses_buttons = namedtuple("Courses_buttuns", ["basic", "individual",
                                                  "professional", "cryptocurrency_training",
-                                                 "stock_market_training", "investor"]
+                                                 "stock_market_training", "investor",
+                                                 "reviews", "result"]
                              )
 COURSES_MENU_BUTTONS = Courses_buttons("Базовий", "Індивідуальний VIP-курс",
                                        "Профі-курс", "Крипто-курс",
-                                       "Фондовий ринок", "Курс інвестора")
+                                       "Фондовий ринок", "Курс інвестора", "Відгуки",
+                                       "Результати")
 
 Project_buttons = namedtuple("Project_buttons", ["portfolio", "bots_trading", "spiceprop"])
 PROJECT_MENU_BUTTONS = Project_buttons("Інвестиційний портфель", "Торгові Роботи", "Spiceprop")
@@ -62,3 +69,18 @@ TIMEZONE = pytz.timezone("Europe/Kyiv")  # Replace with your timezone
 PATH_TO_JSON_FILE = "static/texts.json"
 with open(PATH_TO_JSON_FILE, "r") as text:
     TEXT_DATA = json.load(text)
+
+
+def get_all_file_paths(folder_path):
+    # List to store paths of all files
+    file_paths = []
+
+    # Iterate over all items in the folder
+    for item in os.listdir(folder_path):
+        # Construct full path
+        full_path = os.path.join(folder_path, item)
+        # Check if it is a file
+        if os.path.isfile(full_path):
+            file_paths.append(full_path)
+
+    return file_paths

@@ -9,7 +9,8 @@ from telegram import (
     Update,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
-    ReplyKeyboardRemove
+    ReplyKeyboardRemove,
+    InputMediaPhoto
 )
 
 from telegram.ext import (
@@ -91,6 +92,10 @@ async def courses_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         case gl.COURSES_MENU_BUTTONS.investor:
             context.user_data["course"] = gl.COURSES_MENU_BUTTONS.stock_market_training
             return await handle_courses_option(update, context, text=gl.TEXT_DATA["courses_info"]["investor"])
+        case gl.COURSES_MENU_BUTTONS.reviews:
+            return await course_pure_data_handler(update, context, text_data=gl.TEXT_DATA["courses_info"]["reviews"])
+        case gl.COURSES_MENU_BUTTONS.result:
+            return await course_pure_data_handler(update, context, text_data=gl.TEXT_DATA["courses_info"]["result"])
         case gl.BACK_BUTTON_NAME:
             return await start(query, context)
 
@@ -141,8 +146,33 @@ async def course_info_handler(update: Update, context: ContextTypes.DEFAULT_TYPE
     """
     query = update.callback_query
     await query.answer()
-    text = f"{gl.REGISTRATION_FOR_COURSE} {context.user_data['course']}"
+    if context.user_data.get('course'):
+        text = f"{gl.REGISTRATION_FOR_COURSE} {context.user_data['course']}"
     if query.data == gl.BACK_BUTTON_NAME:
         return await courses_menu(query, context)
     elif query.data == gl.REGISTRATION_CALLBACK:
         return await reg.register(query, context, text)
+
+
+async def course_pure_data_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, text_data: dict):
+    await update.callback_query.message.reply_text(
+        text_data["text"],
+        parse_mode="HTML",
+        reply_markup=ReplyKeyboardRemove()
+    )
+
+    chat_id = update.effective_chat.id
+    image = text_data["image_path"]
+    media_group = [InputMediaPhoto(open(image_path, 'rb')) for image_path in gl.get_all_file_paths(image)]
+    await context.bot.send_media_group(chat_id=chat_id, media=media_group)
+
+    keyboard = [[InlineKeyboardButton(gl.BACK_BUTTON_NAME, callback_data=gl.BACK_BUTTON_NAME)]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    await update.callback_query.message.reply_text(
+        text=text_data["end_text"],
+        reply_markup=reply_markup,
+        parse_mode="HTML"
+    )
+
+    return gl.COURSE_INFO_MENU

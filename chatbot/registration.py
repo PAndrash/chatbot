@@ -74,7 +74,8 @@ async def registration_phone(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
     context.user_data['name'] = update.message.text
     reply_markup = ReplyKeyboardMarkup([[
-        KeyboardButton(gl.PHONE_BUTTON_NAME, request_contact=True)
+        KeyboardButton(gl.PHONE_BUTTON_NAME, request_contact=True),
+        KeyboardButton(gl.REGISTRATION_NAMES.cancel)
     ]],
         one_time_keyboard=True,
         resize_keyboard=True
@@ -99,8 +100,17 @@ async def registration_city(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     Returns:
         int: The next state in the conversation flow, indicating that the bot is now asking for the user's city.
     """
+    #phone_number = update.message.contact.phone_number
+    if not update.message.contact:
+        return await finish_registration_menu(update, context)
     context.user_data['phone_number'] = update.message.contact.phone_number
-    await update.message.reply_text(gl.TEXT_DATA["registration_question"]["city"], reply_markup=ReplyKeyboardRemove())
+
+    await update.message.reply_text(gl.TEXT_DATA["registration_question"]["city_1"], reply_markup=ReplyKeyboardRemove())
+    keyboard = [
+        [InlineKeyboardButton(gl.REGISTRATION_NAMES.cancel, callback_data=gl.CANCEL_REGISTRATION_CALLBACK)]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await update.message.reply_text(gl.TEXT_DATA["registration_question"]["city_2"], reply_markup=reply_markup)
     return gl.ASK_CITY
 
 
@@ -118,8 +128,19 @@ async def registration_email(update: Update, context: ContextTypes.DEFAULT_TYPE)
     Returns:
         int: The next state in the conversation flow, indicating that the bot is now asking for the user's email address.
     """
+    query = update.callback_query
+    if query:
+        await query.answer()
+        return await finish_registration_menu(query, context)
     context.user_data['city'] = update.message.text
-    await update.message.reply_text(gl.TEXT_DATA["registration_question"]["email"], reply_markup=ReplyKeyboardRemove())
+
+    await update.message.reply_text(gl.TEXT_DATA["registration_question"]["email_1"], reply_markup=ReplyKeyboardRemove())
+    keyboard = [
+        [InlineKeyboardButton(gl.REGISTRATION_NAMES.cancel, callback_data=gl.CANCEL_REGISTRATION_CALLBACK)]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    await update.message.reply_text(gl.TEXT_DATA["registration_question"]["email_2"], reply_markup=reply_markup)
     return gl.ASK_EMAIL
 
 
@@ -138,6 +159,11 @@ async def registration_confirmation(update: Update, context: ContextTypes.DEFAUL
    Returns:
        int: The next state in the conversation flow, indicating that the bot is now asking for confirmation of the details.
    """
+    query = update.callback_query
+    if query:
+        await query.answer()
+        return await finish_registration_menu(query, context)
+
     context.user_data["email"] = update.message.text
     name = context.user_data["name"]
     phone_number = context.user_data["phone_number"]

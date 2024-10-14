@@ -77,14 +77,17 @@ async def project_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
     match query.data:
         case gl.PROJECT_MENU_BUTTONS.portfolio:
+            context.user_data["project"] = gl.PROJECT_MENU_BUTTONS.portfolio
             return await handle_project_option(update, context, text=gl.TEXT_DATA["project_info"]["portfolio"]["text"],
                                                image=gl.TEXT_DATA["project_info"]["portfolio"]["image_path"],
                                                end_text=gl.TEXT_DATA["project_info"]["portfolio"]["end_text"])
         case gl.PROJECT_MENU_BUTTONS.bots_trading:
+            context.user_data["project"] = gl.PROJECT_MENU_BUTTONS.bots_trading
             return await handle_project_option(update, context, text=gl.TEXT_DATA["project_info"]["bots_trading"]["text"],
                                                image=gl.TEXT_DATA["project_info"]["bots_trading"]["image_path"],
                                                end_text=gl.TEXT_DATA["project_info"]["bots_trading"]["end_text"])
         case gl.PROJECT_MENU_BUTTONS.spiceprop:
+            context.user_data["project"] = gl.PROJECT_MENU_BUTTONS.spiceprop
             return await handle_project_option(update, context, text=gl.TEXT_DATA["project_info"]["spiceprop"])
         case gl.BACK_BUTTON_NAME:
             return await start(query, context)
@@ -118,7 +121,7 @@ async def handle_project_option(update: Update, context: ContextTypes.DEFAULT_TY
 
     if image:
         chat_id = update.effective_chat.id
-        media_group = [InputMediaPhoto(open(image_path, 'rb')) for image_path in get_all_file_paths(image)]
+        media_group = [InputMediaPhoto(open(image_path, 'rb')) for image_path in gl.get_all_file_paths(image)]
         await update.callback_query.message.reply_text(
             text=text,
             parse_mode="HTML"
@@ -157,23 +160,8 @@ async def project_info_handler(update: Update, context: ContextTypes.DEFAULT_TYP
     """
     query = update.callback_query
     await query.answer()
-
+    text = f"{gl.REGISTRATION_FOR_PROJECT} {context.user_data['project']}"
     if query.data == gl.BACK_BUTTON_NAME:
         return await projects_menu(query, context)
     elif query.data == gl.REGISTRATION_CALLBACK:
-        return await reg.register(query, context, gl.REGISTRATION_FOR_PROJECT)
-
-
-def get_all_file_paths(folder_path):
-    # List to store paths of all files
-    file_paths = []
-
-    # Iterate over all items in the folder
-    for item in os.listdir(folder_path):
-        # Construct full path
-        full_path = os.path.join(folder_path, item)
-        # Check if it is a file
-        if os.path.isfile(full_path):
-            file_paths.append(full_path)
-
-    return file_paths
+        return await reg.register(query, context, text)

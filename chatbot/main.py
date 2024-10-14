@@ -26,13 +26,15 @@ import chatbot.registration as reg
 import chatbot.webinars as webinars
 import chatbot.projects as projects
 import chatbot.send_all as send_all
+import chatbot.awards
+import chatbot.affiliate_program
 from chatbot.start import start, stop, restore_all_jobs, restore_all_webinars
 from db.database import create_db_and_tables
 
 
-# logging.basicConfig(
-#     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.DEBUG
-# )
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.DEBUG
+)
 
 
 async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -68,6 +70,10 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
             return await projects.projects_menu(update, context)
         case gl.START_KEYBOARD_BUTTONS.cancel:
             return await stop(update, context)
+        case gl.START_KEYBOARD_BUTTONS.awards:
+            return await chatbot.awards.awards_info(update, context)
+        case gl.START_KEYBOARD_BUTTONS.affiliate_program:
+            return await chatbot.affiliate_program.affiliate_program_info(update, context)
         case gl.SET_WEBINAR_BUTTON:
             return await webinars.set_webinar_date(update, context)
         case gl.SEND_ALL_BUTTON:
@@ -95,9 +101,12 @@ def main() -> None:
             gl.COURSE_INFO_MENU: [CallbackQueryHandler(courses.course_info_handler)],
             gl.ASK_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, reg.registration_phone),
                           CallbackQueryHandler(reg.registration_phone)],
-            gl.ASK_NUMBER: [MessageHandler(filters.CONTACT, reg.registration_city)],
-            gl.ASK_CITY: [MessageHandler(filters.TEXT, reg.registration_email)],
-            gl.ASK_EMAIL: [MessageHandler(filters.TEXT & ~filters.COMMAND, reg.registration_confirmation)],
+            gl.ASK_NUMBER: [MessageHandler(filters.CONTACT, reg.registration_city),
+                            MessageHandler(filters.TEXT & ~filters.COMMAND, reg.registration_city)],
+            gl.ASK_CITY: [MessageHandler(filters.TEXT, reg.registration_email),
+                          CallbackQueryHandler(reg.registration_email)],
+            gl.ASK_EMAIL: [MessageHandler(filters.TEXT & ~filters.COMMAND, reg.registration_confirmation),
+                           CallbackQueryHandler( reg.registration_confirmation)],
             gl.CONFIRMATION: [CallbackQueryHandler(reg.registration_confirmation_handler)],
             gl.WEBINAR_MENU: [CallbackQueryHandler(webinars.webinars_handler)],
             gl.PROJECT_MENU: [CallbackQueryHandler(projects.project_handler)],
@@ -112,7 +121,9 @@ def main() -> None:
                 CallbackQueryHandler(send_all.stop_collection, pattern="^stop$")],
             gl.REVIEW_SCHEDULE: [CallbackQueryHandler(send_all.confirm_schedule, pattern="^confirm$"),
                                  CallbackQueryHandler(send_all.restart_collection, pattern="^start_over$")],
-            gl.WAITING_FOR_TIME: [MessageHandler(filters.TEXT & ~filters.COMMAND, send_all.receive_time)]
+            gl.WAITING_FOR_TIME: [MessageHandler(filters.TEXT & ~filters.COMMAND, send_all.receive_time)],
+            gl.AWARDS_MENU: [CallbackQueryHandler(chatbot.awards.awards_handler)],
+            gl.AFFILIATE_PROGRAM_INFO_MENU: [CallbackQueryHandler(chatbot.affiliate_program.affiliate_program_info_handler)],
 
         },
         fallbacks=[CommandHandler('cancel', stop)],
